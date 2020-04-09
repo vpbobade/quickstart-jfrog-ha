@@ -1,0 +1,2 @@
+# quickstart-jfrog-ha
+JfrogHA
