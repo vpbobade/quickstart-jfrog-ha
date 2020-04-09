@@ -1,0 +1,94 @@
+- name: create launch config
+  ec2_lc:
+    name: "{{ AutoScaleLC }}"
+    image_id: "{{ AmiId }}"
+    key_name: "{{ personalKeypair }}"
+    region: "{{ AWSRegion }}"
+    security_groups: 
+      - "{{ ArtifactoryELBSG.group_id }}"
+#      - "{{ tower_callback_client_group_id }}"
+#      - "{{ tower_client_group_id }}"
+    instance_type: "{{ InstanceType }}"
+#    user_data: "{{ user_data }}"
+  tags: launch_config
+
+- name: create autoscale groups
+  ec2_asg:
+    name: "{{ APPNAME }}"
+    load_balancers: "{{ ELBNAME }}"
+    launch_config_name: "{{ AutoScaleLC }}"
+    min_size: "{{ Autoscale_min_size }}"
+    max_size: "{{ Autoscale_max_size }}"
+    desired_capacity: "{{ Autoscale_min_size }}"
+    region: "{{ AWSRegion }}"
+    vpc_zone_identifier: 
+       - "{{ PrivateSubnet1ID }}"
+       - "{{ PrivateSubnet2ID }}"
+    health_check_type: EC2
+    health_check_period: 300
+
+- name: create scale down  policy
+  ec2_scaling_policy:
+    state: present
+    region: "{{ AWSRegion }}"
+    name: scale-down-policy
+    adjustment_type: ChangeInCapacity
+    asg_name: "{{ APPNAME }}"
+    scaling_adjustment: -1
+    min_adjustment_step: -1
+    cooldown: 300
+  register: scale_down_policy
+  tags: scaling_policy
+
+- name: create scale up policy
+  ec2_scaling_policy:
+    state: present
+    region: "{{ AWSRegion }}"
+    name: scale-up-policy
+    adjustment_type: ChangeInCapacity
+    asg_name: "{{ APPNAME }}"
+    scaling_adjustment: 1
+    min_adjustment_step: 1
+    cooldown: 300
+  register: scale_up_policy
+  tags: scaling_policy
+
+- name: create scale down alarm
+  ec2_metric_alarm:
+    state: present
+    region: "{{ AWSRegion }}"
+    name: "cpu-low"
+    metric: CPUUtilization
+    namespace: "AWS/EC2"
+    statistic: Average
+    comparison: "<="
+    threshold: 5.0
+    period: 300
+    evaluation_periods: 3
+    unit: "Percent"
+    description: "This will alarm when cpu usage average is lower than 5% for 15 minutes "
+    dimensions: 
+      AutoScalingGroupName: "{{ APPNAME }}"
+    alarm_actions: 
+    - "{{ scale_down_policy.arn }}"
+  tags: alarm
+
+- name: create scale up alarm
+  ec2_metric_alarm:
+    state: present
+    region: "{{ AWSRegion }}"
+    name: "cpu-high"
+    metric: CPUUtilization
+    namespace: "AWS/EC2"
+    statistic: Average
+    comparison: "<="
+    threshold: 90.0
+    period: 300
+    evaluation_periods: 3
+    unit: "Percent"
+    description: "This will alarm when cpu usage average is higher than 90% for 15 minutes "
+    dimensions: 
+      AutoScalingGroupName: "{{ APPNAME }}"
+    alarm_actions: 
+      - "{{ scale_up_policy.arn }}"
+  tags: alarm

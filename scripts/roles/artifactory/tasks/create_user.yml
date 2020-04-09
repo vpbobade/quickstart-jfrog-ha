@@ -1,0 +1,29 @@
+- name: Create two new IAM users with API keys
+  iam:
+    iam_type: user
+    name: "{{ item }}"
+    state: present
+    password: "{{ temp_pass }}"
+    access_key_state: create
+  loop:
+    - ArtifactoryS3IAMUser
+
+- name: Create S3 bucket - PUT operation
+  aws_s3:
+    bucket: "{{ S3_BUCKETNAME }}
+    object: /my/desired/key.txt
+    src: /usr/local/myfile.txt
+    mode: put
+    permission: private
+    encryption_mode: "{{ ENCRYPTION }}" 
+
+- name: Create S3 policy from template
+  iam_policy:
+    iam_type: user
+    iam_name: "{{ item.user }}"
+    policy_name: "s3_limited_access_{{ item.prefix }}"
+    state: present
+    policy_json: " {{ lookup( 'template', 's3_policy.json.j2') }} "
+    with_items:
+      - user: ArtifactoryS3IAMUser
+        prefix: s3

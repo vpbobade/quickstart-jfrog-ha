@@ -1,0 +1,192 @@
+- name: Create the ELB only listening over port 80
+  ec2_elb_lb:
+  name: " {{ ELBNAME }}"
+    state: present
+    region: "{{ AWSRegion }}"
+    security_group_ids:
+      - "{{ ArtifactoryELBSG }}"
+    subnets:
+      - "{{ PublicSubnet1ID }}"
+      - "{{ PublicSubnet2ID }}"
+    stickiness:
+      type: loadbalancer
+      enabled: yes
+      expiration: 300
+    listeners:
+      - protocol: http
+        load_balancer_port: 80
+        instance_port: 80
+      - protocol: tcp
+        load_balancer_port: 443
+        instance_port: 443
+    health_check:
+        ping_protocol: http # options are http, https, ssl, tcp
+        ping_port: 80
+        ping_path: "/index.html" # not required for tcp or ssl
+        response_timeout: 5 # seconds
+        interval: 30 # seconds
+        unhealthy_threshold: 2
+        healthy_threshold: 10
+    access_logs:
+        interval: 5 # minutes (defaults to 60)
+        s3_location: "{{ s3_endpoint }}" # This value is required if access_logs is set
+        s3_prefix: "logs"
+    zones:
+      - "{{ AWS_AZ1 }}"
+      - "{{ AWS_AZ2 }}"
+  register: artifactoryELB
+
+- name: Create Target Group (to be used later in autoscaling)
+  elb_target_group:
+    name: elb_tgp
+    protocol: http
+    port: 81
+    vpc_id: "{{ VPCID }}"
+    health_check_path: /
+    successful_response_codes: "200,250-260"
+    target_type: ip
+    targets:
+      - Id: 10.0.0.10
+        Port: 80
+        AvailabilityZone: all
+      - Id: 10.0.0.20
+        Port: 80
+    state: present
+    wait_timeout: 200
+    wait: True   
+#- name: Creating Artifactory EC2 security group 
+#  ec2_group:
+#    name: ArtifactoryEC2SG
+#    description: EC2 group
+#    vpc_id: "{{ VPCID }}"
+#    region: "{{ AWSRegion }}"
+#    AWS_ACCESS_KEY: "{{ AWS_ACCESS_KEY }}"
+#    AWS_SECRET_KEY: "{{ AWS_SECRET_KEY }}"
+#    rules:
+#      - proto: tcp
+#        from_port: 80
+#        to_port: 80
+#        cidr_ip: "{{ VPCCIDR }}"
+#      - proto: tcp
+#        from_port: 22
+#        to_port: 22
+#        cidr_ip: "{{ VPCCIDR }}"
+#      - proto: tcp
+#        from_port: 443
+#        to_port: 443
+#        cidr_ip: "{{ VPCCIDR }}"
+#        # this should only be needed for EC2 Classic security group rules
+#        # because in a VPC an ELB will use a user-account security group
+#        # group_id: amazon-elb/sg-87654321/amazon-elb-sg
+#      - proto: tcp
+#        from_port: 8081
+#        to_port: 8081
+#        cidr_ip: "{{ PrivateSubnet1CIDR }}"
+#        # group_id: 123412341234/sg-87654321/exact-name-of-sg
+#      - proto: tcp
+#        from_port: 8081
+#        to_port: 8081
+#        cidr_ip: "{{ PrivateSubnet1CIDR }}"
+#        # group_id: 123412341234/sg-87654321/exact-name-of-sg
+#    rules_egress:
+#      - proto: tcp
+#        from_port: 80
+#        to_port: 80
+#        cidr_ip: "{{ PublicCIDR }}"
+#      - proto: tcp
+#        from_port: 22
+#        to_port: 22
+#        cidr_ip: "{{ PublicCIDR }}"
+#      - proto: tcp
+#        from_port: 443
+#        to_port: 443
+#        cidr_ip: "{{ PublicCIDR }}"
+#        # this should only be needed for EC2 Classic security group rules
+#        # because in a VPC an ELB will use a user-account security group
+#        # group_id: amazon-elb/sg-87654321/amazon-elb-sg
+#      - proto: tcp
+#        from_port: 8081
+#        to_port: 8081
+#        cidr_ip: "{{ PrivateSubnet1CIDR }}"
+#        # group_id: 123412341234/sg-87654321/exact-name-of-sg
+#      - proto: tcp
+#        from_port: 8081
+#        to_port: 8081
+#        cidr_ip: "{{ PrivateSubnet2CIDR }}"
+#      - proto: tcp
+#        from_port: 3306
+#        to_port: 3306
+#        cidr_ip: "{{ PrivateSubnet1CIDR }}"
+#        # group_id: 123412341234/sg-87654321/exact-name-of-sg
+#      - proto: tcp
+#        from_port: 3306
+#        to_port: 3306
+#        cidr_ip: "{{ PrivateSubnet2CIDR }}"
+#
+#- name: Create Artifactory ELB security group
+#  ec2_group:
+#    name: ArtifactoryELBSG
+#    description: A security group for my current IP
+#    region: "{{ AWSRegion }}"
+#    vpc_id: "{{ VPCID }}"
+#    rules:
+#      - proto: tcp
+#        from_port: 80
+#        to_port: 80
+#        cidr_ip: "{{ PublicCIDR }}"
+#      - proto: tcp
+#        from_port: 22
+#        to_port: 22
+#        cidr_ip: "{{ PublicCIDR }}"
+#      - proto: tcp
+#        from_port: 443
+#        to_port: 443
+#        cidr_ip: "{{ PublicCIDR }}"
+#    rules_egress:
+#      - proto: tcp
+#        from_port: 80
+#        to_port: 80
+#        cidr_ip: 0.0.0.0/0
+#      - proto: tcp
+#        from_port: 443
+#        to_port: 443
+#        cidr_ip: 0.0.0.0/0
+#  register: ArtifactoryELBSG
+# 
+- name: Create the ELB only listening over port 80
+  ec2_elb_lb:
+  name: " {{ ELBNAME }}"
+    state: present
+    region: "{{ AWSRegion }}"
+    security_group_ids:
+      - "{{ ArtifactoryELBSG }}"
+    subnets:
+      - "{{ PublicSubnet1ID }}"
+      - "{{ PublicSubnet2ID }}"
+    stickiness:
+      type: loadbalancer
+      enabled: yes
+      expiration: 300
+    listeners:
+      - protocol: http
+        load_balancer_port: 80
+        instance_port: 80
+      - protocol: tcp
+        load_balancer_port: 443
+        instance_port: 443
+    health_check:
+        ping_protocol: http # options are http, https, ssl, tcp
+        ping_port: 80
+        ping_path: "/index.html" # not required for tcp or ssl
+        response_timeout: 5 # seconds
+        interval: 30 # seconds
+        unhealthy_threshold: 2
+        healthy_threshold: 10
+    access_logs:
+        interval: 5 # minutes (defaults to 60)
+        s3_location: "{{ s3_endpoint }}" # This value is required if access_logs is set
+        s3_prefix: "logs   
+   zones:
+      - "{{ AWS_AZ1 }}"
+      - "{{ AWS_AZ2 }}"
+  register: artifactoryELB

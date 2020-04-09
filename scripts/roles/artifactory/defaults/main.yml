@@ -1,0 +1,152 @@
+---
+# defaults file for quickstart-jfrog-artifactory/scripts/roles/artifactory
+APPNAME: ArtifactoryHA 
+#Security configuration
+#Parameters:
+KeyPairName: personalKeypair
+AccessCIDR:
+RemoteAccessCIDR: 
+#AWSParameters
+AWS_ACCESS_KEY:
+AWS_SECRET_KEY:        
+AWSRegion: "us-east-1"
+AWS_AZ1: "{{ aws_region }}a"
+AWS_AZ2: "{{ aws_region }}c"
+#aws_vpc_dhcp_default_region: "{{ AWSRegion }}"
+#aws_vpc_dhcp_vpc_filter_additional: []
+#aws_vpc_dhcp_options_sets: []
+#aws_vpc_dhcp_options_sets:
+DHCPOptionsId:
+#default: Network Configuration
+VPCNAME: "vpc-{{ aws_env }}"
+VPCID: vpc-0a4c5dc156d0e9004
+VPCCIDR: 10.0.0.0/16
+PublicSubnet1ID: subnet-0081a4c574db59af4 
+PublicSubnet2ID: subnet-0a7c552349bbfecce
+PrivateSubnet1ID: subnet-08eed85e397f240b5
+PrivateSubnet2ID: subnet-0174464700634169f
+PrivateSubnet1CIDR: 10.0.0.0/28
+PrivateSubnet2CIDR: 10.0.0.16/28
+PublicSubnet1CIDR:
+PublicSubnet2CIDR:
+PublicCIDR: "0.0.0.0/0"
+PrivateSG_NAME: "PrivateSecurityGroup"
+PublicSG_NAME: "PublicSecurityGroup"
+#default: Bastion configuration
+#ProvisionBastionHost: Enabled
+#BastionInstanceType: t2.micro
+#BastionOS: "Amazon-Linux-HVM"
+#BastionRootVolumeSize: 10
+#BastionEnableTCPForwarding: true
+#NumBastionHosts: 2
+#BastionEnableX11Forwardingi: true
+#default: Amazon EC2 configuration
+AmiId: ami-09a5b0b7edf08843d
+VolumeSize: 8
+InstanceType: t2.medium
+InstanceCount: 2
+#default: JFrog Artifactory configuration
+ArtifactoryVersion: 6.18.1
+NumberOfSecondary: 1
+SMLicensesName:
+Certificate:
+CertificateKey:
+CertificateDomain:
+ArtifactoryServerName:
+MasterKey:
+ExtraJavaOptions:
+KeystorePassword:
+AnsibleVaultPass:
+#default: Amazon RDS configuration
+DatabaseName:
+DatabaseEngine:
+DatabaseVersion:
+DatabaseUser:
+DatabasePassword:
+DatabaseInstance:
+DBAllocatedStorage:
+MultiAZDatabase:
+#default: AWS Quick Start Configuration
+QSS3BucketName:
+QSS3KeyPrefix:
+#S3 
+S3_BUCKETNAME:
+ENCRYPTION: AES256
+
+
+ecs_deployment: false
+
+db_type: mysql
+db_driver: com.mysql.jdbc.Driver
+db_ipaddr: 127.0.0.1
+db_name: artifactory
+db_user: artuser
+db_password: badpassword
+
+s3_endpoint: needs_to_be_passed
+s3_access_key: needs_to_be_passed
+s3_access_secret_key: needs_to_be_passed
+s3_bucket: needs_to_be_passed
+
+# Differences required for nginx as a container.
+artifactory_hostname: 127.0.0.1
+ssl_dir: /var/opt/jfrog/nginx/ssl
+key_dir: /etc/pki/tls/private
+nginx_user_id: 104
+nginx_group_id: 107
+
+ELBNAME: ArtifactoryELB
+AutoScaleLC: ArtifactoryAutoScalingLC
+Atoscale_min_size:
+Autoscale_max_size:
+certificate_key_file: /root/key
+certificate_file: /root/cert
+art_primary: true
+java_version: java-1.8.0
+extra_java_opts: -server -Xms2g -Xmx14g -Xss256k -XX:+UseG1GC
+java_mysql_driver:
+  url: https://bintray.com/artifact/download/bintray/jcenter/mysql/mysql-connector-java/5.1.38/mysql-connector-java-5.1.38.jar
+  dest: /opt/jfrog/artifactory/tomcat/lib/mysql-connector-java-5.1.38.jar
+  owner: artifactory
+  group: artifactory
+rds_cert:
+  url: https://s3.amazonaws.com/rds-downloads/rds-combined-ca-bundle.pem
+  dest: /root/rds-combined-ca-bundle.pem
+  owner: root
+  group: root
+  cert_alias: rds_ca
+import_rds: true
+
+
+
+# The Docker scripts handle this, so we do not need these variables when configuring
+# A docker system that will host
+artifactory_keystore_path: /etc/alternatives/jre_1.8.0/lib/security/cacerts
+artifactory_keystore_default: changeit
+artifactory_keystore_pass: needs_to_be_passed
+  
+
+
+
+# AWS parameters
+# aws_region: "us-east-1"
+# aws_az1: "{{ aws_region }}a"
+# aws_az2: "{{ aws_region }}c"
+#
+# # VPC parameters
+# vpc_name: "vpc-{{ aws_env }}"
+# vpc_cidr: "10.0.0.0/16"
+#
+# # Subnet CIDR defs
+# public_subnet_az1_cidr:  "10.0.0.0/24"
+# public_subnet_az2_cidr:  "10.0.2.0/24"
+# private_subnet_az1_cidr: "10.0.1.0/24"
+# private_subnet_az2_cidr: "10.0.3.0/24"
+#
+# # Access location CIDR defs (used in NACLs and SGs)
+# public_cidr: "0.0.0.0/0"
+#
+# # security group parameters
+# private_sg_name: "PrivateSecurityGroup"
+# public_sg_name:  "PublicSecurityGroup"
+#

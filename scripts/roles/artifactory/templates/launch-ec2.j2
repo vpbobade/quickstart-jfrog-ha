@@ -1,0 +1,35 @@
+- name: create ec2 instance
+  ec2:
+    AWS_ACCESS_KEY: "{{ AWS_ACCESS_KEY }}"
+    AWS_SECRET_KEY: "{{ AWS_SECRET_KEY }}"
+    image: "{{ AmiId }}"
+    wait: yes
+    instance_type: "{ InstanceType }"
+    group_id:  "{{ item }}"
+    region: "{{ AWSRegion }}"
+    count_tag:
+      Name: dbserver
+    exact_count: "{{ InstanceCount }}"
+  register: ec2
+  with_items:
+   - "{{ PrivateSG_NAME }}"
+   - "{{ PublicSG_NAME }}"
+
+- name: create RDS instance
+  rds:
+    AWS_ACCESS_KEY: "{{ AWS_ACCESS_KEY }}"
+    AWS_SECRET_KEY: "{{ AWS_SECRET_KEY }}"
+    command: create
+    instance_name: "{{ DatabaseInstance }}"
+    db_engine: "{{ DatabaseEngine }}"
+    size: 20
+    instance_type: db.t2.micro
+    username: "{{ DatabaseUser }}"
+    password: "{{ DatabasePassword }}"
+    region: "{{ AWSRegion }}"
+    tags:
+        Environment: testing
+        Application: cms
+   register: group
+
+
