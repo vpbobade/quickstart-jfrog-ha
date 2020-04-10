@@ -35,6 +35,18 @@
       - "{{ AWS_AZ1 }}"
       - "{{ AWS_AZ2 }}"
   register: artifactoryELB
+  
+- name: Adding EC2 machines to elb
+  local_action:
+      module: ec2_elb
+      AWS_ACCESS_KEY: "{{ AWS_ACCESS_KEY }}"
+      AWS_SECRET_KEY: "{{ AWS_SECRET_KEY }}"
+      region: "{{ AWSRegion }}"
+      instance_id:
+        - "{{ InstanceIDPrimary }}"
+        - "{{ InstanceIDSecondary }}"
+      ec2_elbs: "{{ ELBNAME }}"
+      state: present  
 
 - name: Create Target Group (to be used later in autoscaling)
   elb_target_group:
@@ -54,6 +66,7 @@
     state: present
     wait_timeout: 200
     wait: True   
+    
 #- name: Creating Artifactory EC2 security group 
 #  ec2_group:
 #    name: ArtifactoryEC2SG
