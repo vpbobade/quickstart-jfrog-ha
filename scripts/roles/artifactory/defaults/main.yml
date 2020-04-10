@@ -45,6 +45,8 @@ AmiId: ami-09a5b0b7edf08843d
 VolumeSize: 8
 InstanceType: t2.medium
 InstanceCount: 2
+InstanceIDPrimary:
+InstanceIDSecondary:
 #default: JFrog Artifactory configuration
 ArtifactoryVersion: 6.18.1
 NumberOfSecondary: 1
