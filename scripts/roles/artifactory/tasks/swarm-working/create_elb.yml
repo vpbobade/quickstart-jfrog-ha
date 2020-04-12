@@ -1,0 +1,91 @@
+---
+- hosts: localhost
+  tasks:
+   - yum:
+       name: python-pip
+       state: latest       
+   - pip:
+       name: boto3       
+   - name: Create the ELB only listening over port 80
+     ec2_elb_lb:
+       name: jfrogloadbalancer
+       state: present
+       region: us-east-1
+       scheme: internet-facing
+       security_group_ids:
+         - sg-053bcf0eed35fb0c2
+       subnets:
+         - subnet-98bdf6c4
+     #    - subnet-98bdf6c4  
+       stickiness:
+         type: loadbalancer
+         enabled: yes
+         expiration: 100
+       listeners:
+         - protocol: http
+           load_balancer_port: 80
+           instance_port: 80
+         - protocol: tcp
+           load_balancer_port: 443
+           instance_port: 443
+       health_check:
+           ping_protocol: http # options are http, https, ssl, tcp
+           ping_port: 80
+           ping_path: "/index.html" # not required for tcp or ssl
+           response_timeout: 5 # seconds
+           interval: 30 # seconds
+           unhealthy_threshold: 10 
+           healthy_threshold: 10    
+       access_logs:
+           interval: 5 # minutes (defaults to 60)
+           s3_location: novartis6874 # This value is required if access_logs is set
+           s3_prefix: "logs"
+           #       zones:
+           #     - us-east-1a
+           #         - us-east-1c
+     register: artifactoryELB
+   
+#   - name: Ensuring if the instances are up
+#     wait_for:
+#       host: "{{ item }}"
+#       port: 22
+#       delay: 30
+#       timeout: 200 
+#       state: started
+#     with_items: 
+#       - 172.31.43.159
+#       - 172.31.37.210
+   
+   - name: Adding ec2 instances to elb
+     ec2_elb:
+        region: us-east-1 
+        instance_id: "{{ item }}"
+        ec2_elbs: jfrogloadbalancer
+        state: present 
+        wait: yes
+     with_items:
+            - i-097d0483c7cefa0fd
+            - i-099b1fff9b4ec3ce6    
+
+#   - name: Create Target Group
+#     elb_target_group:
+#       name: elbtgp
+#       protocol: http
+#       port: 80
+#       state: present
+#       vpc_id: vpc-2edb4154
+#       region: us-east-1
+#       health_check_protocol: http
+#       health_check_port: 80
+#       health_check_path: '/'
+#       health_check_timeout: 10
+#       health_check_interval: 30
+#       healthy_threshold_count: 2
+#       modify_targets: yes
+#       successful_response_codes: "200,250-260"
+#       target_type: instance
+#       targets:
+#         - Id: i-097d0483c7cefa0fd
+#           Port: 8081
+#         - Id: i-099b1fff9b4ec3ce6
+#           Port: 8081
