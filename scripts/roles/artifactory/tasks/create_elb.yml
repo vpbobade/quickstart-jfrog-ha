@@ -35,6 +35,29 @@
       - "{{ AWS_AZ1 }}"
       - "{{ AWS_AZ2 }}"
   register: artifactoryELB
+  
+- name: Ensuring if the instances are up
+  wait_for:
+    host: "{{ item }}"
+    port: 22
+    delay: 30
+    timeout: 300
+    state: started
+  with_items: 
+    - "{{ InstanceIDPrimary }}"
+    - "{{ InstanceIDSecondary }}"
+  
+- name: Adding EC2 machines to elb
+  local_action:
+      module: ec2_elb
+      AWS_ACCESS_KEY: "{{ AWS_ACCESS_KEY }}"
+      AWS_SECRET_KEY: "{{ AWS_SECRET_KEY }}"
+      region: "{{ AWSRegion }}"
+      instance_id:
+        - "{{ InstanceIDPrimary }}"
+        - "{{ InstanceIDSecondary }}"
+      ec2_elbs: "{{ ELBNAME }}"
+      state: present  
 
 - name: Create Target Group (to be used later in autoscaling)
   elb_target_group:
@@ -54,6 +77,7 @@
     state: present
     wait_timeout: 200
     wait: True   
+    
 #- name: Creating Artifactory EC2 security group 
 #  ec2_group:
 #    name: ArtifactoryEC2SG
@@ -152,41 +176,3 @@
 #        to_port: 443
 #        cidr_ip: 0.0.0.0/0
 #  register: ArtifactoryELBSG
-# 
-- name: Create the ELB only listening over port 80
-  ec2_elb_lb:
-  name: " {{ ELBNAME }}"
-    state: present
-    region: "{{ AWSRegion }}"
-    security_group_ids:
-      - "{{ ArtifactoryELBSG }}"
-    subnets:
-      - "{{ PublicSubnet1ID }}"
-      - "{{ PublicSubnet2ID }}"
-    stickiness:
-      type: loadbalancer
-      enabled: yes
-      expiration: 300
-    listeners:
-      - protocol: http
-        load_balancer_port: 80
-        instance_port: 80
-      - protocol: tcp
-        load_balancer_port: 443
-        instance_port: 443
-    health_check:
-        ping_protocol: http # options are http, https, ssl, tcp
-        ping_port: 80
-        ping_path: "/index.html" # not required for tcp or ssl
-        response_timeout: 5 # seconds
-        interval: 30 # seconds
-        unhealthy_threshold: 2
-        healthy_threshold: 10
-    access_logs:
-        interval: 5 # minutes (defaults to 60)
-        s3_location: "{{ s3_endpoint }}" # This value is required if access_logs is set
-        s3_prefix: "logs   
-   zones:
-      - "{{ AWS_AZ1 }}"
-      - "{{ AWS_AZ2 }}"
-  register: artifactoryELB
