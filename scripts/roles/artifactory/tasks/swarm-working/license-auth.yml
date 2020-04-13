@@ -36,6 +36,75 @@
 ---
 - hosts: localhost
   tasks:
+   - name: ansible create files directory
+     file:
+      path: /root/files/
+      state: directory
+
+   - name: Copying the script 
+     shell: cp -rf /opt/quickstart-jfrog-ha/scripts/roles/artifactory/tasks/swarm-working/files/* /root/files/
+
+   - name: Copying the sscript
+     copy:
+       src: /opt/quickstart-jfrog-ha/scripts/roles/artifactory/tasks/swarm-working/prepareHostEnv.sh
+       dest: /root/
+
+   - name: Execute the script
+     command: sh /root/prepareHostEnv.sh -t ha -c    
+   
+   - name: Template of the properties and certs as requires for Artifactory
+     template:
+       src: "{{ item.src }}"
+       dest: "{{ item.dest }}"
+       owner: root
+       group: root
+       mode: '0777'
+     loop:
+#    - src: db.properties.j2
+#      dest: /var/opt/jfrog/artifactory/etc/db.properties
+#    - src: binarystore.xml.j2
+#      dest: /var/opt/jfrog/artifactory/etc/binarystore.xml
+#    - src: ha-node.properties.j2
+#      dest: /var/opt/jfrog/artifactory/etc/ha-node.properties
+#    - src: master.key.j2
+#      dest: /var/opt/jfrog/artifactory/etc/security/master.key
+#    - src: certificate.pem.j2
+#      dest: "{{ ssl_dir }}/cert.pem"
+#    - src: certificate.key.j2
+#      dest: "{{ key_dir }}/cert.key"
+#      - src: /opt/quickstart-jfrog-ha/scripts/roles/artifactory/tasks/swarm-working/prepareHostEnv.sh.j2
+#       dest: /root/
+      - src: /opt/quickstart-jfrog-ha/scripts/roles/artifactory/tasks/swarm-working/artifactory.cluster.license.j1
+        dest: /data/artifactory/etc/artifactory.cluster.license
+      - src: /opt/quickstart-jfrog-ha/scripts/roles/artifactory/tasks/swarm-working/artifactory-ha1.yml.j2
+        dest: /root/artifactory-ha1.yml
+  
+   - name: Installing docker and its dependancies
+     shell: yum install docker -y ; systemctl enable docker ;  systemctl start docker; sleep 10 ;  sudo curl -L "https://github.com/docker/compose/releases/download/1.23.1/docker-compose-$(uname -s)-$(uname -m)" -o /usr/local/bin/docker-compose ; chmod +x /usr/local/bin/docker-compose
+
+
+   - name: Deploying jfrogHA containers on first master node
+     command: docker-compose -f /root/artifactory-ha1.yml up -d  
+
+- hosts: Jfrogha
+  tasks:
+   - name: ansible create files directory
+     file:
+      path: /root/files/
+      state: directory
+
+   - name: Copying folder structure
+     shell: cp -rf  /opt/quickstart-jfrog-ha/scripts/roles/artifactory/tasks/swarm-working/files/* /root/files/
+
+
+   - name: Copying the sscript
+     copy:
+       src: /opt/quickstart-jfrog-ha/scripts/roles/artifactory/tasks/swarm-working/prepareHostEnv.sh
+       dest: /root/
+
+   - name: Execute the script
+     command: sh /root/prepareHostEnv.sh -t ha -c
+   
    - name: Template of the properties and certs as requires for Artifactory
      template:
        src: "{{ item.src }}"
@@ -43,18 +112,30 @@
        owner: root
        group: root
        mode: '0664'
-     loop: 
+     loop:
 #    - src: db.properties.j2
 #      dest: /var/opt/jfrog/artifactory/etc/db.properties
 #    - src: binarystore.xml.j2
 #      dest: /var/opt/jfrog/artifactory/etc/binarystore.xml
 #    - src: ha-node.properties.j2
-#      dest: /var/opt/jfrog/artifactory/etc/ha-node.properties 
+#      dest: /var/opt/jfrog/artifactory/etc/ha-node.properties
 #    - src: master.key.j2
 #      dest: /var/opt/jfrog/artifactory/etc/security/master.key
 #    - src: certificate.pem.j2
 #      dest: "{{ ssl_dir }}/cert.pem"
 #    - src: certificate.key.j2
 #      dest: "{{ key_dir }}/cert.key"
-      - src: /opt/ArtifactoryHA/docker-compose/artifactory/artifactory.cluster.license.j2
-        dest: /data/artifactory/etc/artifactory.lic
+      - src: /opt/quickstart-jfrog-ha/scripts/roles/artifactory/tasks/swarm-working/artifactory.cluster.license.j2
+        dest: /data/artifactory/etc/
+      - src: /opt/quickstart-jfrog-ha/scripts/roles/artifactory/tasks/swarm-working/artifactory-ha2.yml.j2
+        dest: /root/artifactory-ha2.yml
+
+   - name: Installing docker and its dependancies
+     shell: yum install docker -y ; systemctl enable docker ;  systemctl start docker; sudo curl -L "https://github.com/docker/compose/releases/download/1.23.1/docker-compose-$(uname -s)-$(uname -m)" -o /usr/local/bin/docker-compose ; chmod +x /usr/local/bin/docker-compose
+
+   - name: Copying the script
+     shell: cp -rf  /opt/quickstart-jfrog-ha/scripts/roles/artifactory/tasks/swarm-working/files/* /root/files/
+
+   - name: Deploying jfrogHA containers on secondary node
+     command: docker-compose -f /root/artifactory-ha2.yml up -d
+

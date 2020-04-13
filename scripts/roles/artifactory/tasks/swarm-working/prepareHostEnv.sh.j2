@@ -112,19 +112,19 @@ processOptions() {
 }
 
 cleanDataDir () {
-#    if [ "${CLEAN}" = "true" ] && [ -d ${ROOT_DATA_DIR} ]; then
-#        local sure='n'
+    if [ "${CLEAN}" = "true" ] && [ -d ${ROOT_DATA_DIR} ]; then
+        local sure='n'
 
- #       if [ "${FORCE}" = "true" ]; then
-#            sure='y'
-#        else
-#            read -p "Are you sure you want to remove existing ${ROOT_DATA_DIR} [y/n]: " sure
-#        fi
-#        if [ "${sure}" = "y" ]; then
+        if [ "${FORCE}" = "true" ]; then
+            sure='y'
+        else
+            read -p "Are you sure you want to remove existing ${ROOT_DATA_DIR} [y/n]: " sure
+        fi
+        if [ "${sure}" = "y" ]; then
             echo "Removing old ${ROOT_DATA_DIR}"
             rm -rf ${ROOT_DATA_DIR}
-#        fi
-#    fi
+        fi
+    fi
 }
 
 createDirectories () {
@@ -140,7 +140,7 @@ createDirectories () {
     if [ "${TYPE}" = "pro" ] || [  "${TYPE}" == "oss" ]; then
         mkdir -p ${ROOT_DATA_DIR}/artifactory/etc
     else
-        mkdir -p ${ROOT_DATA_DIR}/artifactory/etc
+        mkdir -p ${ROOT_DATA_DIR}/artifactory/node{1,2}/etc
         if [ "${TYPE}" = "ha-shared-data" ]; then
             mkdir -p ${ROOT_DATA_DIR}/artifactory/{ha,backup}
         fi
@@ -155,22 +155,22 @@ copyFiles () {
 
     echo "Artifactory configuration files"
     if [ "${TYPE}" = "pro" ] || [ "${TYPE}" = "oss" ]; then
-        cp -fr ${SCRIPT_DIR}/files/access ${ROOT_DATA_DIR}/artifactory/ || errorExit "Copy failed"
+        cp -fr ${SCRIPT_DIR}/../../files/access ${ROOT_DATA_DIR}/artifactory/ || errorExit "Copy failed"
     else
-        cp -fr ${SCRIPT_DIR}/files/access ${ROOT_DATA_DIR}/artifactory// || errorExit "Copy failed"
-        cp -fr ${SCRIPT_DIR}/files/access ${ROOT_DATA_DIR}/artifactory// || errorExit "Copy failed"
+        cp -fr ${SCRIPT_DIR}/../../files/access ${ROOT_DATA_DIR}/artifactory/node1/ || errorExit "Copy failed"
+        cp -fr ${SCRIPT_DIR}/../../files/access ${ROOT_DATA_DIR}/artifactory/node2/ || errorExit "Copy failed"
     fi
 
     # Copy the binarystore.xml which has configuration for no-shared storage
     if [ "${TYPE}" = "ha" ]; then
-        cp -f ${SCRIPT_DIR}/files/binarystore.xml ${ROOT_DATA_DIR}/artifactory//etc || errorExit "Copy failed"
+        cp -f ${SCRIPT_DIR}/../../files/binarystore.xml ${ROOT_DATA_DIR}/artifactory/node1/etc || errorExit "Copy failed"
     fi
 
     local type=${TYPE}
     if [ ${type} = "ha-shared-data" ]; then type=ha; fi
 
     echo "Nginx Artifactory configuration"
-    cp -fr ${SCRIPT_DIR}/files/nginx/conf.d/${type}/* ${ROOT_DATA_DIR}/nginx/conf.d/ || errorExit "Copy failed"
+    cp -fr ${SCRIPT_DIR}/../../files/nginx/conf.d/${type}/* ${ROOT_DATA_DIR}/nginx/conf.d/ || errorExit "Copy failed"
 }
 
 setPermissions () {
@@ -206,8 +206,8 @@ PRO_NOTES
 ======================================
 IMPORTANT
 - Before starting, it is recommended to place the license file(s) (artifactory.lic) in the Artifactory etc directory of the primary node
-  - Artifactory HA :   ${ROOT_DATA_DIR}/artifactory//etc
-                       ${ROOT_DATA_DIR}/artifactory//etc
+  - Artifactory HA :   ${ROOT_DATA_DIR}/artifactory/node1/etc
+                       ${ROOT_DATA_DIR}/artifactory/node2/etc
 - The access keys used in these examples SHOULD NOT be used for production!
 HA_NOTES
     fi
