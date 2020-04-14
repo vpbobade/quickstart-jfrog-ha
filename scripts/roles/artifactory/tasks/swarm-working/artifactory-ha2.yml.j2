@@ -25,11 +25,11 @@ services:
      - 8082:8081
     depends_on:
      - postgresql
-     - artifactory
+    # - artifactory
     links:
      - postgresql
     # Must pass this to non primary so it can wait for primary to be up
-     - artifactory
+    # - artifactory
     volumes:
      - /data/artifactory:/var/opt/jfrog/artifactory
     environment:

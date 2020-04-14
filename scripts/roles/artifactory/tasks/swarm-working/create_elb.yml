@@ -5,7 +5,7 @@
        name: python-pip
        state: latest       
    - pip:
-       name: boto3       
+       name: boto       
    - name: Create the ELB only listening over port 80
      ec2_elb_lb:
        name: jfrogloadbalancer
@@ -64,8 +64,8 @@
         state: present 
         wait: yes
      with_items:
-            - i-097d0483c7cefa0fd
-            - i-099b1fff9b4ec3ce6    
+            - i-0ba000ad39840dae7
+            - i-036985624e77c8e1b
 
 #   - name: Create Target Group
 #     elb_target_group:
